@@ -10,7 +10,7 @@ def home():
 
 def run():
   # Use waitress for production-ready server
-  serve(app, host='0.0.0.0', port=8080)
+  serve(app, host='0.0.0.0', port=10000)
 
 def keep_alive():
     t = Thread(target=run)
