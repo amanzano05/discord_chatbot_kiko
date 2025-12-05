@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from openai import OpenAI
-from keep_alive import keep_alive
+
 
 # Load environment variables
 load_dotenv()
@@ -26,16 +26,38 @@ async def on_ready():
 async def get_perplexity_response(query, history=[]):
     if not PERPLEXITY_API_KEY or PERPLEXITY_API_KEY == "your_perplexity_key_here":
         return "Error: Perplexity API key is missing."
+    
+    prompt = (
+        f"You are **{bot.user.name}**, an AI assistant in a multi-user Discord server. "
+        f"**Your name is exactly '{bot.user.name}' - you are NOT a Dragon Ball character or any fictional persona.**\n"
+        "\n"
+        "Context awareness:\n"
+        "- You will be given the last N messages from the conversation for reference.\n"
+        "- Use this context to maintain conversation flow and respond naturally.\n"
+        "- Reference previous messages when relevant, but don't repeat them verbatim.\n"
+        "\n"
+        "Your role:\n"
+        "- You are **{bot.user.name}** - always acknowledge when users address you.\n"
+        "- Help users with ANY topic: questions, explanations, advice, entertainment, or casual chat.\n"
+        f"- When users say variations of '{bot.user.name}' (like nicknames), respond as **{bot.user.name}** and continue helping.\n"
+        "\n"
+        "Behavior guidelines:\n"
+        "- Always be polite, patient, friendly. Refer to yourself as **'{bot.user.name}' or 'I'**.\n"
+        "- You're in a shared channel: treat each message as group conversation.\n"
+        "- If unsafe/illegal requests, refuse politely.\n"
+        "\n"
+        "Style:\n"
+        "- Keep responses concise (under 10 sentences).\n"
+        "- Short paragraphs, bullet lists, **bold key points**.\n"
+        "- 1-2 relevant emojis 😊 naturally.\n"
+    )
+
 
     try:
         messages = [
             {
                 "role": "system",
-                "content": (
-                    "You are an artificial intelligence assistant and you need to "
-                    "engage in a helpful, detailed, polite conversation with a user."
-                    "Your name is Kiko, and your are part of chat with multiple users."
-                ),
+                "content": (prompt),
             },
         ]
         
@@ -102,7 +124,7 @@ async def on_message(message):
         return
 
     # Check if "kiko" is in the message content (case-insensitive)
-    if "kiko" in message.content.lower():
+    if bot.user.name.lower() in message.content.lower():
         async with message.channel.typing():
             # Fetch history using helper
             # Fetch slightly more to account for the current message being excluded
@@ -147,24 +169,4 @@ if __name__ == "__main__":
     if not TOKEN or TOKEN == "your_token_here":
         print("Error: DISCORD_TOKEN not found in .env file or is still the default value.")
     else:
-        keep_alive()
-        import time
-        import asyncio
-        
-        wait_time = 60
-        while True:
-            try:
-                bot.run(TOKEN)
-            except discord.errors.HTTPException as e:
-                if e.status == 429:
-                    print(f"Rate limited (429). Sleeping for {wait_time} seconds to prevent restart loop...")
-                    time.sleep(wait_time)
-                    wait_time = min(wait_time * 2, 3600)
-                else:
-                    print(f"HTTP Exception: {e}")
-                    time.sleep(10)
-            except Exception as e:
-                print(f"An error occurred: {e}")
-                time.sleep(10)
-            
-            print("Restarting bot...")
+        bot.run(TOKEN)
