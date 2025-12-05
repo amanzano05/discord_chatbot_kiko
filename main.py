@@ -117,14 +117,20 @@ async def get_channel_history(channel, limit=30, exclude_ids=[]):
     # Reverse to have oldest first for the API context
     return history[::-1]
 
+def should_reply_to(message):
+    # Reply if it's a DM, or if the bot is mentioned/named in a guild
+    is_dm = isinstance(message.channel, discord.DMChannel)
+    is_mentioned = bot.user.name.lower() in message.content.lower()
+    return is_dm or is_mentioned
+
 @bot.event
 async def on_message(message):
     # Ignore messages from the bot itself
     if message.author == bot.user:
         return
 
-    # Check if "kiko" is in the message content (case-insensitive)
-    if bot.user.name.lower() in message.content.lower():
+    # Check if we should reply (DM or mention)
+    if should_reply_to(message):
         async with message.channel.typing():
             # Fetch history using helper
             # Fetch slightly more to account for the current message being excluded
@@ -158,6 +164,30 @@ async def ask(ctx, *, query):
         query_with_name = f"[{ctx.author.name}]: {query}"
 
         answer = await get_perplexity_response(query_with_name, formatted_history)
+        
+        if len(answer) > 2000:
+            for i in range(0, len(answer), 2000):
+                await ctx.send(answer[i:i+2000])
+        else:
+            await ctx.send(answer)
+
+@bot.command(name='deep_ask')
+async def deep_ask(ctx, *, query):
+    """
+    Asks a question using a much deeper history context (last 500 messages).
+    Useful for summarizing long conversations or finding older info.
+    """
+    async with ctx.typing():
+        # Fetch a much larger history
+        # 500 limit handles a good chunk of "whole" history without being excessive
+        formatted_history = await get_channel_history(ctx.channel, limit=500, exclude_ids=[ctx.message.id])
+        
+        query_with_name = f"[{ctx.author.name}]: {query}"
+
+        # We append a note to the query to inform the AI about the deep context
+        system_note = "\n(Note: You are provided with a DEEP history context of up to 500 messages. Use this effectively to answer usage questions or summaries.)"
+        
+        answer = await get_perplexity_response(query_with_name + system_note, formatted_history)
         
         if len(answer) > 2000:
             for i in range(0, len(answer), 2000):
