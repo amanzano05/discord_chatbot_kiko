@@ -165,6 +165,30 @@ async def ask(ctx, *, query):
         else:
             await ctx.send(answer)
 
+@bot.command(name='deep_ask')
+async def deep_ask(ctx, *, query):
+    """
+    Asks a question using a much deeper history context (last 500 messages).
+    Useful for summarizing long conversations or finding older info.
+    """
+    async with ctx.typing():
+        # Fetch a much larger history
+        # 500 limit handles a good chunk of "whole" history without being excessive
+        formatted_history = await get_channel_history(ctx.channel, limit=500, exclude_ids=[ctx.message.id])
+        
+        query_with_name = f"[{ctx.author.name}]: {query}"
+
+        # We append a note to the query to inform the AI about the deep context
+        system_note = "\n(Note: You are provided with a DEEP history context of up to 500 messages. Use this effectively to answer usage questions or summaries.)"
+        
+        answer = await get_perplexity_response(query_with_name + system_note, formatted_history)
+        
+        if len(answer) > 2000:
+            for i in range(0, len(answer), 2000):
+                await ctx.send(answer[i:i+2000])
+        else:
+            await ctx.send(answer)
+
 if __name__ == "__main__":
     if not TOKEN or TOKEN == "your_token_here":
         print("Error: DISCORD_TOKEN not found in .env file or is still the default value.")
