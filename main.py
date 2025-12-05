@@ -117,14 +117,20 @@ async def get_channel_history(channel, limit=30, exclude_ids=[]):
     # Reverse to have oldest first for the API context
     return history[::-1]
 
+def should_reply_to(message):
+    # Reply if it's a DM, or if the bot is mentioned/named in a guild
+    is_dm = isinstance(message.channel, discord.DMChannel)
+    is_mentioned = bot.user.name.lower() in message.content.lower()
+    return is_dm or is_mentioned
+
 @bot.event
 async def on_message(message):
     # Ignore messages from the bot itself
     if message.author == bot.user:
         return
 
-    # Check if "kiko" is in the message content (case-insensitive)
-    if bot.user.name.lower() in message.content.lower():
+    # Check if we should reply (DM or mention)
+    if should_reply_to(message):
         async with message.channel.typing():
             # Fetch history using helper
             # Fetch slightly more to account for the current message being excluded
