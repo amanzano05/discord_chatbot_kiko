@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from openai import OpenAI
+from keep_alive import keep_alive
 
 # Load environment variables
 load_dotenv()
@@ -146,4 +147,20 @@ if __name__ == "__main__":
     if not TOKEN or TOKEN == "your_token_here":
         print("Error: DISCORD_TOKEN not found in .env file or is still the default value.")
     else:
-        bot.run(TOKEN)
+    else:
+        keep_alive()
+        import time
+        import asyncio
+        
+        try:
+            bot.run(TOKEN)
+        except discord.errors.HTTPException as e:
+            if e.status == 429:
+                print("Rate limited (429). Sleeping for 60 seconds to prevent restart loop...")
+                time.sleep(60)
+            else:
+                print(f"HTTP Exception: {e}")
+                time.sleep(10)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            time.sleep(10)
