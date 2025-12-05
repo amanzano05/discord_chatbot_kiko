@@ -22,15 +22,9 @@ client = OpenAI(api_key=PERPLEXITY_API_KEY, base_url="https://api.perplexity.ai"
 async def on_ready():
     print(f'{bot.user} has connected to Discord!')
 
-@bot.command(name='hello')
-async def hello(ctx):
-    await ctx.send(f'hello {ctx.author.name}')
-
-@bot.command(name='ask')
-async def ask(ctx, *, query):
+async def get_perplexity_response(query):
     if not PERPLEXITY_API_KEY or PERPLEXITY_API_KEY == "your_perplexity_key_here":
-        await ctx.send("Error: Perplexity API key is missing.")
-        return
+        return "Error: Perplexity API key is missing."
 
     try:
         messages = [
@@ -38,7 +32,7 @@ async def ask(ctx, *, query):
                 "role": "system",
                 "content": (
                     "You are an artificial intelligence assistant and you need to "
-                    "engage in a helpful, detailed, polite conversation with a user."
+                    "engage in a helpful, detailed, polite conversation with a user. Your name is Kiko."
                 ),
             },
             {
@@ -51,17 +45,46 @@ async def ask(ctx, *, query):
             model="sonar",
             messages=messages,
         )
-        answer = response.choices[0].message.content
+        return response.choices[0].message.content
+
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+@bot.event
+async def on_message(message):
+    # Ignore messages from the bot itself
+    if message.author == bot.user:
+        return
+
+    # Check if "kiko" is in the message content (case-insensitive)
+    if "kiko" in message.content.lower():
+        async with message.channel.typing():
+            answer = await get_perplexity_response(message.content)
+            
+            # Discord has a 2000 char limit
+            if len(answer) > 2000:
+                for i in range(0, len(answer), 2000):
+                    await message.channel.send(answer[i:i+2000])
+            else:
+                await message.channel.send(answer)
+
+    # Important: Process commands so !hello and !ask still work
+    await bot.process_commands(message)
+
+@bot.command(name='hello')
+async def hello(ctx):
+    await ctx.send(f'hello {ctx.author.name}')
+
+@bot.command(name='ask')
+async def ask(ctx, *, query):
+    async with ctx.typing():
+        answer = await get_perplexity_response(query)
         
-        # Discord has a 2000 char limit, split if necessary or just send first chunk for now
         if len(answer) > 2000:
             for i in range(0, len(answer), 2000):
                 await ctx.send(answer[i:i+2000])
         else:
             await ctx.send(answer)
-
-    except Exception as e:
-        await ctx.send(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     if not TOKEN or TOKEN == "your_token_here":
