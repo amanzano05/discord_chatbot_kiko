@@ -151,15 +151,20 @@ if __name__ == "__main__":
         import time
         import asyncio
         
-        try:
-            bot.run(TOKEN)
-        except discord.errors.HTTPException as e:
-            if e.status == 429:
-                print("Rate limited (429). Sleeping for 60 seconds to prevent restart loop...")
-                time.sleep(60)
-            else:
-                print(f"HTTP Exception: {e}")
+        wait_time = 60
+        while True:
+            try:
+                bot.run(TOKEN)
+            except discord.errors.HTTPException as e:
+                if e.status == 429:
+                    print(f"Rate limited (429). Sleeping for {wait_time} seconds to prevent restart loop...")
+                    time.sleep(wait_time)
+                    wait_time = min(wait_time * 2, 3600)
+                else:
+                    print(f"HTTP Exception: {e}")
+                    time.sleep(10)
+            except Exception as e:
+                print(f"An error occurred: {e}")
                 time.sleep(10)
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            time.sleep(10)
+            
+            print("Restarting bot...")
