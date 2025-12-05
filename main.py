@@ -147,7 +147,6 @@ if __name__ == "__main__":
     if not TOKEN or TOKEN == "your_token_here":
         print("Error: DISCORD_TOKEN not found in .env file or is still the default value.")
     else:
-    else:
         keep_alive()
         import time
         import asyncio
