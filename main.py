@@ -14,7 +14,9 @@ PERPLEXITY_API_KEY = os.getenv('PERPLEXITY_API_KEY')
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-bot = commands.Bot(command_prefix='!', intents=intents)
+intents.members = True
+# Disable default help command to use our own
+bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
 
 # Setup OpenAI client for Perplexity
 client = OpenAI(api_key=PERPLEXITY_API_KEY, base_url="https://api.perplexity.ai")
@@ -151,9 +153,21 @@ async def on_message(message):
     # Important: Process commands so !hello and !ask still work
     await bot.process_commands(message)
 
-@bot.command(name='hello')
-async def hello(ctx):
-    await ctx.send(f'hello {ctx.author.name}')
+@bot.command(name='help')
+async def help(ctx):
+    help_text = (
+        f"**🤖 {bot.user.name} Bot Help**\n\n"
+        "I'm an AI assistant powered by Perplexity! Here's how to use me:\n\n"
+        "**🗣️ Chatting**\n"
+        f"- **Mention me** (`{bot.user.name}`) in any channel to start a conversation.\n"
+        "- **DM me** directly - no keywords needed!\n"
+        "- I have context awareness! I can see the last 30 messages in a channel.\n\n"
+        "**📜 Commands**\n"
+        "- **`!ask <question>`**: Ask a specific question using recent context (30 msgs).\n"
+        "- **`!deep_ask <question>`**: Ask using DEEP context (last 500 msgs). Great for summaries!\n"
+        "- **`!help`**: Show this message.\n"
+    )
+    await ctx.send(help_text)
 
 @bot.command(name='ask')
 async def ask(ctx, *, query):
