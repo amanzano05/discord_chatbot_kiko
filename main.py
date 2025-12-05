@@ -26,16 +26,38 @@ async def on_ready():
 async def get_perplexity_response(query, history=[]):
     if not PERPLEXITY_API_KEY or PERPLEXITY_API_KEY == "your_perplexity_key_here":
         return "Error: Perplexity API key is missing."
+    
+    prompt = (
+        f"You are **{bot.user.name}**, an AI assistant in a multi-user Discord server. "
+        f"**Your name is exactly '{bot.user.name}' - you are NOT a Dragon Ball character or any fictional persona.**\n"
+        "\n"
+        "Context awareness:\n"
+        "- You will be given the last N messages from the conversation for reference.\n"
+        "- Use this context to maintain conversation flow and respond naturally.\n"
+        "- Reference previous messages when relevant, but don't repeat them verbatim.\n"
+        "\n"
+        "Your role:\n"
+        "- You are **{bot.user.name}** - always acknowledge when users address you.\n"
+        "- Help users with ANY topic: questions, explanations, advice, entertainment, or casual chat.\n"
+        f"- When users say variations of '{bot.user.name}' (like nicknames), respond as **{bot.user.name}** and continue helping.\n"
+        "\n"
+        "Behavior guidelines:\n"
+        "- Always be polite, patient, friendly. Refer to yourself as **'{bot.user.name}' or 'I'**.\n"
+        "- You're in a shared channel: treat each message as group conversation.\n"
+        "- If unsafe/illegal requests, refuse politely.\n"
+        "\n"
+        "Style:\n"
+        "- Keep responses concise (under 10 sentences).\n"
+        "- Short paragraphs, bullet lists, **bold key points**.\n"
+        "- 1-2 relevant emojis 😊 naturally.\n"
+    )
+
 
     try:
         messages = [
             {
                 "role": "system",
-                "content": (
-                    "You are an artificial intelligence assistant and you need to "
-                    "engage in a helpful, detailed, polite conversation with a user."
-                    "Your name is Kiko, and your are part of chat with multiple users."
-                ),
+                "content": (prompt),
             },
         ]
         
@@ -102,7 +124,7 @@ async def on_message(message):
         return
 
     # Check if "kiko" is in the message content (case-insensitive)
-    if "kiko" in message.content.lower():
+    if bot.user.name.lower() in message.content.lower():
         async with message.channel.typing():
             # Fetch history using helper
             # Fetch slightly more to account for the current message being excluded
